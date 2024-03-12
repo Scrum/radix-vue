@@ -52,10 +52,12 @@ export function usePointerDownOutside(
     if (!isClient)
       return
     const handlePointerDown = async (event: PointerEvent) => {
+      const target = event.target as HTMLElement
+
       if (!element?.value)
         return
 
-      if (isLayerExist(element.value, event.target as HTMLElement)) {
+      if (isLayerExist(element.value, target)) {
         isPointerInsideDOMTree.value = false
         return
       }
@@ -150,7 +152,7 @@ export function useFocusOutside(
         return
 
       await nextTick()
-      if (isLayerExist(element.value, event.target as HTMLElement))
+      if (!element.value || isLayerExist(element.value, event.target as HTMLElement))
         return
 
       if (event.target && !isFocusInsideDOMTree.value) {

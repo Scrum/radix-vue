@@ -2,7 +2,7 @@ import { HstVue } from "@histoire/plugin-vue";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import alias from "@rollup/plugin-alias";
+import alias from "@rollup/plugin-alias"; 
 
 const projectRootDir = resolve(__dirname);
 
@@ -35,6 +35,14 @@ export default defineConfig({
         { id: "utilities", title: "Utilities" },
       ],
     },
+    theme: {
+      title: "Radix Vue",
+      logo: {
+        square: '../docs/content/public/logo.svg',
+        light: '../docs/content/public/logo.svg',
+        dark: '../docs/content/public/logo.svg',
+      },  
+    },
   },
 
   server: {
@@ -42,5 +50,6 @@ export default defineConfig({
       // Allow serving files from two level up to the project root
       allow: [".."],
     },
+    host: true
   },
 });

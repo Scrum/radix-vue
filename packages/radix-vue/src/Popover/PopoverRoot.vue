@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useId } from '@/shared'
+import { createContext } from '@/shared'
 
 export interface PopoverRootProps {
   /**
@@ -14,11 +14,14 @@ export interface PopoverRootProps {
   /**
    * The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers.
    *
-   * @default false
+   * @defaultValue false
    */
   modal?: boolean
 }
 export type PopoverRootEmits = {
+  /**
+   * Event handler called when the open state of the popover changes.
+   */
   'update:open': [value: boolean]
 }
 
@@ -57,7 +60,7 @@ const triggerElement = ref<HTMLElement>()
 const hasCustomAnchor = ref(false)
 
 providePopoverRootContext({
-  contentId: useId(),
+  contentId: '',
   modal,
   open,
   onOpenChange: (value) => {

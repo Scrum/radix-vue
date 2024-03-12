@@ -1,20 +1,25 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 
-export interface ComboboxViewportProps extends PrimitiveProps {}
+export interface ComboboxViewportProps extends PrimitiveProps {
+  nonce?: string
+}
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 
 const props = defineProps<ComboboxViewportProps>()
+const { forwardRef } = useForwardExpose()
 </script>
 
 <template>
   <Primitive
+    v-bind="{ ...$attrs, ...props }"
+    :ref="forwardRef"
     data-radix-combobox-viewport
     role="presentation"
-    v-bind="{ ...$attrs, ...props }"
     :style="{
       // we use position: 'relative' here on the `viewport` so that when we call
       // `selectedItem.offsetTop` in calculations, the offset is relative to the viewport
@@ -26,7 +31,7 @@ const props = defineProps<ComboboxViewportProps>()
   >
     <slot />
   </Primitive>
-  <Primitive as="style">
+  <Primitive as="style" :nonce="nonce">
     /* Hide scrollbars cross-browser and enable momentum scroll for touch
     devices */ [data-radix-combobox-viewport] { scrollbar-width:none; -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch; }

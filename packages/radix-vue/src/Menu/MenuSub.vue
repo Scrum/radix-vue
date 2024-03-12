@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
-import { createContext, useId } from '@/shared'
+import { createContext } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -15,7 +15,13 @@ export const [injectMenuSubContext, provideMenuSubContext]
   = createContext<MenuSubContext>('MenuSub')
 
 export interface MenuSubProps {
+  /** The controlled open state of the menu. Can be used as `v-model:open`. */
   open?: boolean
+}
+
+export type MenuSubEmits = {
+  /** Event handler called when the open state of the submenu changes. */
+  'update:open': [payload: boolean]
 }
 </script>
 
@@ -31,9 +37,7 @@ import { PopperRoot } from '@/Popper'
 const props = withDefaults(defineProps<MenuSubProps>(), {
   open: undefined,
 })
-const emits = defineEmits<{
-  'update:open': [payload: boolean]
-}>()
+const emits = defineEmits<MenuSubEmits>()
 
 const open = useVModel(props, 'open', emits, {
   defaultValue: false,
@@ -63,8 +67,8 @@ provideMenuContext({
 })
 
 provideMenuSubContext({
-  triggerId: useId(),
-  contentId: useId(),
+  triggerId: '',
+  contentId: '',
   trigger,
   onTriggerChange: (element) => {
     trigger.value = element

@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { useForwardExpose, useId } from '@/shared'
 
 export interface CollapsibleContentProps extends PrimitiveProps {
   /**
@@ -15,7 +16,6 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 import {
   Primitive,
-  usePrimitiveElement,
 } from '@/Primitive'
 import { Presence } from '@/Presence'
 
@@ -26,9 +26,10 @@ defineOptions({
 const props = defineProps<CollapsibleContentProps>()
 
 const rootContext = injectCollapsibleRootContext()
+rootContext.contentId ||= useId(undefined, 'radix-vue-collapsible-content')
 
 const presentRef = ref<InstanceType<typeof Presence>>()
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const width = ref(0)
 const height = ref(0)
@@ -86,11 +87,11 @@ onMounted(() => {
     <Primitive
       v-bind="$attrs"
       :id="rootContext.contentId"
-      ref="primitiveElement"
+      :ref="forwardRef"
       :as-child="props.asChild"
       :as="as"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
-      :data-disabled="rootContext.disabled?.value ? 'true' : undefined"
+      :data-disabled="rootContext.disabled?.value ? '' : undefined"
       :hidden="!presentRef?.present"
       :style="{
         [`--radix-collapsible-content-height`]: `${height}px`,

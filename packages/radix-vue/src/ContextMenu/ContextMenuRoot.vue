@@ -1,7 +1,8 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection } from '@/shared'
+import { createContext, useDirection, useForwardExpose } from '@/shared'
+import type { MenuEmits, MenuProps } from '@/Menu'
 
 type ContextMenuRootContext = {
   open: Ref<boolean>
@@ -10,27 +11,27 @@ type ContextMenuRootContext = {
   dir: Ref<Direction>
 }
 
-export interface ContextMenuRootProps {
-  dir?: Direction
-  modal?: boolean
-}
-export type ContextMenuRootEmits = {
-  'update:open': [value: boolean]
-}
+export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {}
+export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
   = createContext<ContextMenuRootContext>('ContextMenuRoot')
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
+import { ref, toRefs, watch } from 'vue'
 import { MenuRoot } from '@/Menu'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal } = toRefs(props)
+useForwardExpose()
 const dir = useDirection(propDir)
 
 const open = ref(false)
@@ -39,10 +40,13 @@ provideContextMenuRootContext({
   open,
   onOpenChange: (value: boolean) => {
     open.value = value
-    emits('update:open', value)
   },
   dir,
   modal,
+})
+
+watch(open, (value) => {
+  emits('update:open', value)
 })
 </script>
 

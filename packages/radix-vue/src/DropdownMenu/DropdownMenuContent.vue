@@ -13,18 +13,18 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 import { ref } from 'vue'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import { MenuContent } from '@/Menu'
-import { useForwardPropsEmits } from '@/shared'
+import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
+useForwardExpose()
 
 const rootContext = injectDropdownMenuRootContext()
 
 const hasInteractedOutsideRef = ref(false)
 
 function handleCloseAutoFocus(event: Event) {
-  emits('closeAutoFocus', event)
   if (event.defaultPrevented)
     return
   if (!hasInteractedOutsideRef.value) {
@@ -37,6 +37,8 @@ function handleCloseAutoFocus(event: Event) {
   // Always prevent auto focus because we either focus manually or want user agent focus
   event.preventDefault()
 }
+
+rootContext.contentId ||= useId(undefined, 'radix-vue-dropdown-menu-content')
 </script>
 
 <template>
@@ -57,8 +59,8 @@ function handleCloseAutoFocus(event: Event) {
     }"
     @close-auto-focus="handleCloseAutoFocus"
     @interact-outside="(event) => {
-      emits('interactOutside', event)
       if (event.defaultPrevented) return
+
       const originalEvent = event.detail.originalEvent as PointerEvent;
       const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
       const isRightClick = originalEvent.button === 2 || ctrlLeftClick;

@@ -1,8 +1,11 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useId } from '@/shared'
+import { createContext, useForwardExpose, useId } from '@/shared'
 
 export interface MenubarMenuProps {
+  /** A unique value that associates the item with an active value when the navigation menu is controlled.
+   *
+   * This prop is managed automatically when uncontrolled. */
   value?: string
 }
 
@@ -25,8 +28,9 @@ import { MenuRoot } from '@/Menu'
 
 const props = defineProps<MenubarMenuProps>()
 
-const value = props.value ?? useId()
+const value = useId(props.value)
 const rootContext = injectMenubarRootContext()
+useForwardExpose()
 
 const triggerElement = ref<HTMLElement>()
 const wasKeyboardTriggerOpenRef = ref(false)
@@ -42,7 +46,7 @@ provideMenubarMenuContext({
   value,
   triggerElement,
   triggerId: value,
-  contentId: useId(),
+  contentId: '',
   wasKeyboardTriggerOpenRef,
 })
 </script>

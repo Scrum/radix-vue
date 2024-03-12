@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 
 export interface NavigationMenuViewportProps extends PrimitiveProps {
   /**
@@ -19,10 +20,9 @@ import {
 } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState } from './utils'
+import { getOpenState, whenMouse } from './utils'
 import {
   Primitive,
-  usePrimitiveElement,
 } from '@/Primitive'
 import { Presence } from '@/Presence'
 
@@ -32,7 +32,7 @@ defineOptions({
 
 defineProps<NavigationMenuViewportProps>()
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const menuContext = injectNavigationMenuContext()
 
@@ -73,7 +73,7 @@ useResizeObserver(content, () => {
   <Presence :present="forceMount || open">
     <Primitive
       v-bind="$attrs"
-      ref="primitiveElement"
+      :ref="forwardRef"
       :as="as"
       :as-child="asChild"
       :data-state="getOpenState(open)"
@@ -85,7 +85,7 @@ useResizeObserver(content, () => {
         ['--radix-navigation-menu-viewport-height' as any]: size ? `${size?.height}px` : undefined,
       }"
       @pointerenter="menuContext.onContentEnter(menuContext.modelValue.value)"
-      @pointerleave="menuContext.onContentLeave()"
+      @pointerleave="whenMouse(() => menuContext.onContentLeave())"
     >
       <slot />
     </Primitive>

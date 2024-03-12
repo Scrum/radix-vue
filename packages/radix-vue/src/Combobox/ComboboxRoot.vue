@@ -2,10 +2,10 @@
 import type { Ref } from 'vue'
 import type { Direction } from '@/shared/types'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection, useFormControl, useId } from '@/shared'
+import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import { createCollection } from '@/Collection'
 
-export type AcceptableValue = string | number | boolean | object
+export type AcceptableValue = string | number | boolean | Record<string, any>
 type ArrayOrWrapped<T> = T extends any[] ? T : Array<T>
 
 type ComboboxRootContext<T> = {
@@ -34,22 +34,36 @@ export const [injectComboboxRootContext, provideComboboxRootContext]
   = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
 export type ComboboxRootEmits<T = AcceptableValue> = {
+  /** Event handler called when the value changes. */
   'update:modelValue': [value: T]
+  /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean]
+  /** Event handler called when the searchTerm of the combobox changes. */
   'update:searchTerm': [value: string]
 }
 
 export interface ComboboxRootProps<T = AcceptableValue> extends PrimitiveProps {
-  modelValue?: T
-  defaultValue?: T
+  /** The controlled value of the Combobox. Can be binded-with with `v-model`. */
+  modelValue?: T | Array<T>
+  /** The value of the combobox when initially rendered. Use when you do not need to control the state of the Combobox */
+  defaultValue?: T | Array<T>
+  /** The controlled open state of the Combobox. Can be binded-with with `v-model:open`. */
   open?: boolean
+  /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
   defaultOpen?: boolean
+  /** The controlled search term of the Combobox. Can be binded-with with v-model:searchTerm. */
   searchTerm?: string
+  /** Whether multiple options can be selected or not. */
   multiple?: boolean
+  /** When `true`, prevents the user from interacting with Combobox */
   disabled?: boolean
+  /** The name of the Combobox. Submitted with its owning form as part of a name/value pair. */
   name?: string
+  /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `DirectionProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
+  /** The custom filter function for filtering `ComboboxItem`. */
   filterFunction?: (val: ArrayOrWrapped<T>, term: string) => ArrayOrWrapped<T>
+  /** The display value of input for selected item. Does not work with `multiple`. */
   displayValue?: (val: T) => string
 }
 </script>
@@ -57,8 +71,8 @@ export interface ComboboxRootProps<T = AcceptableValue> extends PrimitiveProps {
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { computed, nextTick, ref, toRefs, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { computedWithControl, useVModel } from '@vueuse/core'
+import { Primitive } from '@/Primitive'
+import { useVModel } from '@vueuse/core'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import isEqual from 'fast-deep-equal'
 
@@ -66,6 +80,15 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,
 })
 const emit = defineEmits<ComboboxRootEmits<T>>()
+
+defineSlots<{
+  default(props: {
+    /** Current open state */
+    open: typeof open.value
+    /** Current active value */
+    modelValue: typeof modelValue.value
+  }): any
+}>()
 
 const { multiple, disabled, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
@@ -81,7 +104,7 @@ const modelValue = useVModel(props, 'modelValue', emit, {
   defaultValue: props.defaultValue ?? multiple.value ? [] : undefined,
   passive: (props.modelValue === undefined) as false,
   deep: true,
-}) as Ref<T>
+}) as Ref<T | T[]>
 
 const open = useVModel(props, 'open', emit, {
   defaultValue: props.defaultOpen,
@@ -124,26 +147,30 @@ const isUserInputted = ref(false)
 
 const inputElement = ref<HTMLInputElement>()
 const contentElement = ref<HTMLElement>()
-const { primitiveElement, currentElement: parentElement } = usePrimitiveElement()
+const { forwardRef, currentElement: parentElement } = useForwardExpose()
 const { getItems, reactiveItems, itemMapSize } = createCollection<{ value: T }>('data-radix-vue-combobox-item')
 
-const options = computedWithControl(() => itemMapSize.value, () => {
-  return getItems().map(i => i.value)
-})
+const options = ref<T[]>([]) as Ref<T[]>
+
+watch(() => itemMapSize.value, () => {
+  options.value = getItems().map(i => i.value)
+}, { immediate: true })
 
 const filteredOptions = computed(() => {
   if (isUserInputted.value) {
     if (props.filterFunction)
       return props.filterFunction(options.value as ArrayOrWrapped<T>, searchTerm.value) as T[]
 
-    else if (typeof options.value[0] === 'string')
-      return options.value.filter(i => (i as string).toLowerCase().includes(searchTerm.value?.toLowerCase()))
+    // The default filter only compares strings
+    const optionsWithTypeString = options.value.filter(i => typeof i === 'string') as string[]
+    if (optionsWithTypeString.length)
+      return optionsWithTypeString.filter(i => i.toLowerCase().includes(searchTerm.value?.toLowerCase())) as T[]
   }
   return options.value
 })
 
 function resetSearchTerm() {
-  if (!multiple.value && modelValue.value) {
+  if (!multiple.value && modelValue.value && !Array.isArray(modelValue.value)) {
     if (props.displayValue)
       searchTerm.value = props.displayValue(modelValue.value)
     else if (typeof modelValue.value !== 'object')
@@ -161,8 +188,11 @@ const selectedElement = computed(() => {
   return reactiveItems.value.find(i => i.value === selectedValue.value)?.ref
 })
 
+const stringifiedModelValue = computed(() => JSON.stringify(modelValue.value))
+
 // nextTick() are required in the following watchers as we are waiting for DOM element to be mounted first the only apply following logic
-watch(modelValue, async () => {
+watch(stringifiedModelValue, async () => {
+  await nextTick()
   await nextTick()
   resetSearchTerm()
 }, { immediate: true })
@@ -194,7 +224,7 @@ provideComboboxRootContext({
   open,
   onOpenChange,
   filteredOptions,
-  contentId: useId(),
+  contentId: '',
   inputElement,
   onInputElementChange: val => inputElement.value = val,
   onInputNavigation: async (val) => {
@@ -229,7 +259,7 @@ provideComboboxRootContext({
 <template>
   <PopperRoot>
     <Primitive
-      ref="primitiveElement"
+      :ref="forwardRef"
       :style="{
         pointerEvents: open ? 'auto' : undefined,
       }"
@@ -239,9 +269,8 @@ provideComboboxRootContext({
       v-bind="$attrs"
     >
       <slot
-        :active-index="activeIndex"
         :open="open"
-        :value="modelValue"
+        :model-value="modelValue"
       />
 
       <VisuallyHiddenInput v-if="isFormControl && props.name" :name="props.name" :value="modelValue" />

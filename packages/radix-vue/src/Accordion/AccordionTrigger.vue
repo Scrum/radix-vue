@@ -5,6 +5,7 @@ export interface AccordionTriggerProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { useId } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
@@ -15,6 +16,7 @@ const props = defineProps<AccordionTriggerProps>()
 const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
 
+itemContext.triggerId ||= useId(undefined, 'radix-vue-accordion-trigger')
 function changeItem() {
   if (itemContext.disabled.value)
     return
@@ -25,11 +27,10 @@ function changeItem() {
 <template>
   <CollapsibleTrigger
     :id="itemContext.triggerId"
-    :ref="itemContext.primitiveElement"
+    :ref="itemContext.currentRef"
     data-radix-vue-collection-item
     :as="props.as"
     :as-child="props.asChild"
-    :aria-controls="itemContext.triggerId"
     :aria-disabled="itemContext.disabled.value || undefined"
     :aria-expanded="itemContext.open.value || false"
     :data-disabled="itemContext.dataDisabled.value"

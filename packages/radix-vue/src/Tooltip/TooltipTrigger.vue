@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { useForwardExpose, useId } from '@/shared'
 
 export type TooltipTriggerDataState =
   | 'closed'
@@ -15,7 +16,6 @@ import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
-  usePrimitiveElement,
 } from '@/Primitive'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
@@ -25,8 +25,9 @@ const props = withDefaults(defineProps<TooltipTriggerProps>(), {
 const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
 
-const { primitiveElement, currentElement: triggerElement }
-  = usePrimitiveElement()
+rootContext.contentId ||= useId(undefined, 'radix-vue-tooltip-content')
+
+const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
 const isPointerDown = ref(false)
 const hasPointerMoveOpened = ref(false)
@@ -48,7 +49,7 @@ onMounted(() => {
 <template>
   <PopperAnchor as-child>
     <Primitive
-      ref="primitiveElement"
+      :ref="forwardRef"
       :aria-describedby="
         rootContext.open.value ? rootContext.contentId : undefined
       "

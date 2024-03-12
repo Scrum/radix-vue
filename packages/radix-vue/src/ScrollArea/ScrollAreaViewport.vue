@@ -1,16 +1,16 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 
-export interface ScrollAreaViewportProps extends PrimitiveProps {}
+export interface ScrollAreaViewportProps extends PrimitiveProps {
+  nonce?: string
+}
 </script>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
-import {
-  Primitive,
-  usePrimitiveElement,
-} from '@/Primitive'
+import { Primitive } from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,
@@ -20,9 +20,6 @@ const props = defineProps<ScrollAreaViewportProps>()
 
 const rootContext = injectScrollAreaRootContext()
 
-const { primitiveElement, currentElement: contentElement }
-  = usePrimitiveElement()
-
 const viewportElement = ref<HTMLElement>()
 
 onMounted(() => {
@@ -31,8 +28,9 @@ onMounted(() => {
 })
 
 defineExpose({
-  $el: viewportElement,
+  viewportElement,
 })
+const { forwardRef, currentElement: contentElement } = useForwardExpose()
 </script>
 
 <template>
@@ -58,7 +56,7 @@ defineExpose({
     :tabindex="0"
   >
     <Primitive
-      ref="primitiveElement"
+      :ref="forwardRef"
       :style="{ minWidth: '100%', display: 'table' }"
       :as-child="props.asChild"
       :as="as"
@@ -66,7 +64,7 @@ defineExpose({
       <slot />
     </Primitive>
   </div>
-  <Primitive as="style">
+  <Primitive as="style" :nonce="nonce">
     /* Hide scrollbars cross-browser and enable momentum scroll for touch
     devices */
     [data-radix-scroll-area-viewport] {

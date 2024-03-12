@@ -1,7 +1,10 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 
-export interface SelectViewportProps extends PrimitiveProps {}
+export interface SelectViewportProps extends PrimitiveProps {
+  nonce?: string
+}
 </script>
 
 <script setup lang="ts">
@@ -10,7 +13,6 @@ import { SelectContentDefaultContextValue, injectSelectContentContext } from './
 import { CONTENT_MARGIN } from './utils'
 import {
   Primitive,
-  usePrimitiveElement,
 } from '@/Primitive'
 import { injectSelectItemAlignedPositionContext } from './SelectItemAlignedPosition.vue'
 
@@ -22,7 +24,7 @@ const alignedPositionContext
     ? injectSelectItemAlignedPositionContext()
     : undefined
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { forwardRef, currentElement } = useForwardExpose()
 
 onMounted(() => {
   contentContext?.onViewportChange(currentElement.value)
@@ -63,7 +65,7 @@ function handleScroll(event: WheelEvent) {
 
 <template>
   <Primitive
-    ref="primitiveElement"
+    :ref="forwardRef"
     data-radix-select-viewport
     role="presentation"
     v-bind="{ ...$attrs, ...props }"
@@ -79,7 +81,7 @@ function handleScroll(event: WheelEvent) {
   >
     <slot />
   </Primitive>
-  <Primitive as="style">
+  <Primitive as="style" :nonce="nonce">
     /* Hide scrollbars cross-browser and enable momentum scroll for touch
     devices */ [data-radix-select-viewport] { scrollbar-width:none; -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch; }
